@@ -7,7 +7,8 @@ import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
-import kotlinx.coroutines.channels.Channel
+import com.pawlowski.clarification.ClarificationUseCase
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -16,44 +17,13 @@ suspend fun main() {
 
     val promptExecutor = simpleGoogleAIExecutor(apiKey)
 
+    val clarificationUseCase = ClarificationUseCase()
+
     val masStrategy =
-        strategy<String, String>("MAS-workflow") {
-            val managerPlanNode by node<String, String>("manager_plan") { input ->
-                llm.writeSession {
-                    updatePrompt {
-                        system(
-                            """
-                            You are the ManagerAgent in a Multi-Agent System (MAS) for software modeling.
-                            Your goal is to create a detailed workflow plan for the given task description.
-                            Include which agents should be involved and in what order.
-                            If the task description is unclear, ask the user for clarification before planning (if so, please include word "clarify" in your response.
-                            Be sure you fully understand the task before proceeding (e.g. is it mobile app or backend).
-                            """.trimIndent(),
-                        )
+        strategy<UseCaseDiagramInput, UseCaseDiagramOutput>("MAS-workflow") {
+            val useCaseDiagramSubgraph by useCaseDiagramSubgraph(clarificationUseCase = clarificationUseCase)
 
-                        user("Task description: $input")
-                    }
-
-                    var response = requestLLMWithoutTools()
-
-                    if ("clarify" in response.content.lowercase()) {
-                        println("🤖 ManagerAgent: ${response.content}")
-                        println("🧑 Please clarify: ")
-                        // clarificationRequestChannel.send(Unit)
-                        val clarification = readLine() // clarificationChannel.receive()
-
-                        updatePrompt {
-                            user("Clarification: $clarification")
-                        }
-                        response = requestLLMWithoutTools()
-                    }
-
-                    response.content
-                }
-            }
-
-            edge(nodeStart forwardTo managerPlanNode)
-            edge(managerPlanNode forwardTo nodeFinish)
+            nodeStart then useCaseDiagramSubgraph then nodeFinish
         }
 
     val agentConfig =
@@ -71,8 +41,22 @@ suspend fun main() {
         )
 
     coroutineScope {
-        val result = masAgent.run("Stwórz diagram aktywności dla procesu rejestracji użytkownika.")
-        println("masAgent run ended with result:")
-        println(result)
+        val result =
+            async {
+                masAgent.run(ExamplePrompts.promptNotEnough)
+            }
+        val clarificationJob =
+            launch {
+                clarificationUseCase.observeClarificationRequests().collect {
+                    println("Clarification requested by MAS agent:")
+                    println(it)
+                    println("Please provide clarification:")
+                    val userInput = readLine() ?: ""
+                    clarificationUseCase.handleUserClarification(userInput)
+                }
+            }
+        result.join()
+        println("masAgent run ended with result: ${result.await()}")
+        clarificationJob.cancel()
     }
 }
