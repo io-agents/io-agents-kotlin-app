@@ -5,6 +5,7 @@ import ai.koog.agents.core.dsl.builder.AIAgentGraphStrategyBuilder
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphDelegate
 import ai.koog.agents.core.dsl.builder.forwardTo
+import ai.koog.prompt.dsl.prompt
 import com.pawlowski.clarification.IClarificationUseCase
 import com.pawlowski.clarification.clarificableNode
 import com.pawlowski.plantUml.diagramErrorCorrectorNode
@@ -25,13 +26,13 @@ fun AIAgentGraphStrategyBuilder<*, *>.useCaseDiagramSubgraph(
         name = "UseCaseDiagramSubgraph",
         toolSelectionStrategy = ToolSelectionStrategy.NONE,
     ) {
-        val changePromptToModeler by modelerPromptNode()
+        val setPromptNode by setUseCasePromptNode()
         val clarificationNode by clarificableNode<UseCaseDiagramInput>(clarificationUseCase)
         val generateDiagramNode by generateDiagramNode()
         val diagramCorrectorNode by diagramErrorCorrectorNode()
 
-        edge(nodeStart forwardTo changePromptToModeler)
-        edge(changePromptToModeler forwardTo clarificationNode)
+        edge(nodeStart forwardTo setPromptNode)
+        edge(setPromptNode forwardTo clarificationNode)
         edge(clarificationNode forwardTo generateDiagramNode)
         edge(
             generateDiagramNode forwardTo diagramCorrectorNode onCondition { result ->
@@ -48,19 +49,21 @@ fun AIAgentGraphStrategyBuilder<*, *>.useCaseDiagramSubgraph(
         )
     }
 
-private fun AIAgentSubgraphBuilderBase<*, *>.modelerPromptNode() =
-    node<UseCaseDiagramInput, UseCaseDiagramInput>("manager_plan") { input ->
+private fun AIAgentSubgraphBuilderBase<*, *>.setUseCasePromptNode() =
+    node<UseCaseDiagramInput, UseCaseDiagramInput>("change_prompt") { input ->
         llm.writeSession {
-            updatePrompt {
-                system(
-                    """
-                    You are the Use Case Diagram Modeler in a Multi-Agent System (MAS) for software modeling.
-                    Your goal is to create accurate and comprehensive use case diagrams based on user requirements.
-                    Diagams should be in PlantUML format and only Use Case Diagrams!
-                    """.trimIndent(),
-                )
+            rewritePrompt {
+                prompt(id = "Use case diagram subhraph prompt") {
+                    system(
+                        """
+                        You are the Use Case Diagram Modeler in a Multi-Agent System (MAS) for software modeling.
+                        Your goal is to create accurate and comprehensive use case diagrams based on user requirements.
+                        Diagams should be in PlantUML format and only Use Case Diagrams!
+                        """.trimIndent(),
+                    )
 
-                user("Use case description: $input")
+                    user("Use case description: $input")
+                }
             }
             input
         }
