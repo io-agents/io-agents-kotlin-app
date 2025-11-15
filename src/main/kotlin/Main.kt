@@ -26,7 +26,7 @@ suspend fun main() {
         AIAgentConfig(
             prompt = Prompt.build("mas-io-workflow") {},
             model = GoogleModels.Gemini2_5Flash,
-            maxAgentIterations = 10,
+            maxAgentIterations = 30,
         )
 
     val masAgent =

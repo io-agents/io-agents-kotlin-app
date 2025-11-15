@@ -36,6 +36,56 @@ class UseCaseSubgraphTest {
                 AIAgentConfig(
                     prompt = Prompt.build(id = "testPrompt") {},
                     model = mockk(relaxed = true),
+                    maxAgentIterations = 8,
+                )
+
+            val testStrategy =
+                strategy<UseCaseDiagramInput, UseCaseDiagramOutput>(name = "useCaseDiagramTestStrategy") {
+                    val useCaseDiagramSubgraph by useCaseDiagramSubgraph(clarificationUseCase = testClarificationUseCase)
+
+                    nodeStart then useCaseDiagramSubgraph then nodeFinish
+                }
+
+            val masAgent =
+                AIAgent.Companion(
+                    promptExecutor = mockLLMApi,
+                    strategy = testStrategy,
+                    agentConfig = config,
+                ) {
+                    withTesting()
+                }
+
+            val result =
+                masAgent.run(
+                    agentInput =
+                        UseCaseDiagramInput(
+                            plainTextUseCaseDescription = plainTextUseCaseDescription,
+                        ),
+                )
+
+            result shouldBe
+                UseCaseDiagramOutput(
+                    plantUmlText = DiagramExamples.diagram1,
+                )
+        }
+    }
+
+    @Test
+    fun `useCaseDiagramSubgraph handles autocorrection for wrong diagram formats`() {
+        runBlocking {
+            val plainTextUseCaseDescription = "request1"
+            val mockLLMApi =
+                getMockExecutor {
+                    mockLLMAnswer(response = DiagramExamples.incorrectDiagram1) onRequestContains CLARIFICATION_SYSTEM_PROMPT
+                    mockLLMAnswer(response = DiagramExamples.diagram1) onRequestContains "Diagram generation failed"
+
+                    mockLLMAnswer(response = "I don't know how to answer that.").asDefaultResponse
+                }
+
+            val config =
+                AIAgentConfig(
+                    prompt = Prompt.build(id = "testPrompt") {},
+                    model = mockk(relaxed = true),
                     maxAgentIterations = 10,
                 )
 
