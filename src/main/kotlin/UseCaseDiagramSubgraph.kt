@@ -38,6 +38,7 @@ fun AIAgentGraphStrategyBuilder<*, *>.useCaseDiagramSubgraph(
                 result.isFailure
             },
         )
+        edge(diagramCorrectorNode forwardTo generateDiagramNode)
         edge(
             generateDiagramNode forwardTo nodeFinish onCondition { result ->
                 result.isSuccess
