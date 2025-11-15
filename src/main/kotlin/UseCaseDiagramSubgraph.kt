@@ -7,9 +7,8 @@ import ai.koog.agents.core.dsl.builder.AIAgentSubgraphDelegate
 import ai.koog.agents.core.dsl.builder.forwardTo
 import com.pawlowski.clarification.IClarificationUseCase
 import com.pawlowski.clarification.clarificableNode
-import net.sourceforge.plantuml.SourceStringReader
-import java.io.ByteArrayOutputStream
-import java.io.File
+import com.pawlowski.plantUml.diagramErrorCorrectorNode
+import com.pawlowski.plantUml.generateUmlImage
 
 data class UseCaseDiagramInput(
     val plainTextUseCaseDesciption: String,
@@ -29,13 +28,21 @@ fun AIAgentGraphStrategyBuilder<*, *>.useCaseDiagramSubgraph(
         val changePromptToModeler by modelerPromptNode()
         val clarificationNode by clarificableNode<UseCaseDiagramInput>(clarificationUseCase)
         val generateDiagramNode by generateDiagramNode()
+        val diagramCorrectorNode by diagramErrorCorrectorNode()
 
         edge(nodeStart forwardTo changePromptToModeler)
         edge(changePromptToModeler forwardTo clarificationNode)
         edge(clarificationNode forwardTo generateDiagramNode)
         edge(
-            generateDiagramNode forwardTo nodeFinish transformed { input ->
-                UseCaseDiagramOutput(plantUmlText = input)
+            generateDiagramNode forwardTo diagramCorrectorNode onCondition { result ->
+                result.isFailure
+            },
+        )
+        edge(
+            generateDiagramNode forwardTo nodeFinish onCondition { result ->
+                result.isSuccess
+            } transformed { input ->
+                UseCaseDiagramOutput(plantUmlText = input.getOrThrow())
             },
         )
     }
@@ -59,26 +66,14 @@ private fun AIAgentSubgraphBuilderBase<*, *>.modelerPromptNode() =
     }
 
 private fun AIAgentSubgraphBuilderBase<*, *>.generateDiagramNode() =
-    node<String, String>("manager_plan") { input ->
+    node<String, Result<String>>("manager_plan") { input ->
         println("Generating diagram...")
-        generateUmlImage(
-            umlSource = input,
-            outputPath = "use_case_diagram.png",
-        )
-        println("Use case diagram generated and saved to use_case_diagram.png")
-        input
+        runCatching {
+            generateUmlImage(
+                umlSource = input,
+                outputPath = "use_case_diagram.png",
+            )
+            println("Use case diagram generated and saved to use_case_diagram.png")
+            input
+        }
     }
-
-fun generateUmlImage(
-    umlSource: String,
-    outputPath: String,
-) {
-    val reader = SourceStringReader(umlSource)
-    val out = ByteArrayOutputStream()
-
-    // Renderuje pierwszy diagram (jeśli jest więcej, można iterować)
-    reader.generateDiagramDescription()
-    reader.outputImage(out)
-
-    File(outputPath).writeBytes(out.toByteArray())
-}

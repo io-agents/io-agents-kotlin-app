@@ -8,6 +8,7 @@ import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 import com.pawlowski.clarification.ClarificationUseCase
+import com.pawlowski.plantUml.generateUmlImage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
