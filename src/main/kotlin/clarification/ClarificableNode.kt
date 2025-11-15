@@ -1,8 +1,6 @@
-package com.pawlowski
+package com.pawlowski.clarification
 
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
-import ai.koog.agents.core.dsl.extension.nodeUpdatePrompt
-import com.pawlowski.clarification.IClarificationUseCase
 
 const val CLARIFICATION_PREFIX = "<<CLARIFICATION>>"
 

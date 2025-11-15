@@ -6,6 +6,10 @@ import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphDelegate
 import ai.koog.agents.core.dsl.builder.forwardTo
 import com.pawlowski.clarification.IClarificationUseCase
+import com.pawlowski.clarification.clarificableNode
+import net.sourceforge.plantuml.SourceStringReader
+import java.io.ByteArrayOutputStream
+import java.io.File
 
 data class UseCaseDiagramInput(
     val plainTextUseCaseDesciption: String,
@@ -24,11 +28,13 @@ fun AIAgentGraphStrategyBuilder<*, *>.useCaseDiagramSubgraph(
     ) {
         val changePromptToModeler by modelerPromptNode()
         val clarificationNode by clarificableNode<UseCaseDiagramInput>(clarificationUseCase)
+        val generateDiagramNode by generateDiagramNode()
 
         edge(nodeStart forwardTo changePromptToModeler)
         edge(changePromptToModeler forwardTo clarificationNode)
+        edge(clarificationNode forwardTo generateDiagramNode)
         edge(
-            clarificationNode forwardTo nodeFinish transformed { input ->
+            generateDiagramNode forwardTo nodeFinish transformed { input ->
                 UseCaseDiagramOutput(plantUmlText = input)
             },
         )
@@ -51,3 +57,28 @@ private fun AIAgentSubgraphBuilderBase<*, *>.modelerPromptNode() =
             input
         }
     }
+
+private fun AIAgentSubgraphBuilderBase<*, *>.generateDiagramNode() =
+    node<String, String>("manager_plan") { input ->
+        println("Generating diagram...")
+        generateUmlImage(
+            umlSource = input,
+            outputPath = "use_case_diagram.png",
+        )
+        println("Use case diagram generated and saved to use_case_diagram.png")
+        input
+    }
+
+fun generateUmlImage(
+    umlSource: String,
+    outputPath: String,
+) {
+    val reader = SourceStringReader(umlSource)
+    val out = ByteArrayOutputStream()
+
+    // Renderuje pierwszy diagram (jeśli jest więcej, można iterować)
+    reader.generateDiagramDescription()
+    reader.outputImage(out)
+
+    File(outputPath).writeBytes(out.toByteArray())
+}

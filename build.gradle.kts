@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation("ai.koog:koog-agents:0.5.0")
+    implementation("net.sourceforge.plantuml:plantuml:1.2025.10")
     testImplementation(kotlin("test"))
 }
 
