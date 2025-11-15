@@ -1,9 +1,11 @@
 package com.pawlowski
 
+import com.pawlowski.useCase.UseCaseDiagramInput
+
 object ExamplePrompts {
     val prompt1 =
         UseCaseDiagramInput(
-            plainTextUseCaseDesciption =
+            plainTextUseCaseDescription =
                 """
                 Use Case: Rejestracja nowego użytkownika
 
@@ -36,7 +38,7 @@ object ExamplePrompts {
 
     val prompt2 =
         UseCaseDiagramInput(
-            plainTextUseCaseDesciption =
+            plainTextUseCaseDescription =
                 """
                 Use Case: Rejestracja nowego użytkownika
 
@@ -68,5 +70,5 @@ object ExamplePrompts {
         )
 
     val promptNotEnough =
-        UseCaseDiagramInput(plainTextUseCaseDesciption = "Zrób aplikację do zarządzania")
+        UseCaseDiagramInput(plainTextUseCaseDescription = "Zrób aplikację do zarządzania")
 }

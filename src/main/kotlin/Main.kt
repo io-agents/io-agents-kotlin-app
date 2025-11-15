@@ -20,12 +20,7 @@ suspend fun main() {
 
     val clarificationUseCase = ClarificationUseCase()
 
-    val masStrategy =
-        strategy<UseCaseDiagramInput, UseCaseDiagramOutput>("MAS-workflow") {
-            val useCaseDiagramSubgraph by useCaseDiagramSubgraph(clarificationUseCase = clarificationUseCase)
-
-            nodeStart then useCaseDiagramSubgraph then nodeFinish
-        }
+    val masStrategy = mainStrategy(clarificationUseCase = clarificationUseCase)
 
     val agentConfig =
         AIAgentConfig(

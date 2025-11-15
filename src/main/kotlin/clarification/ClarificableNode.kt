@@ -4,18 +4,19 @@ import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 
 const val CLARIFICATION_PREFIX = "<<CLARIFICATION>>"
 
+val CLARIFICATION_SYSTEM_PROMPT =
+    """
+    Begin by thoroughly analyzing the task description provided by the user.
+        If the task description is unclear, ask the user for clarification before planning (if so, 
+        please start your response with $CLARIFICATION_PREFIX and then continue with your questions).
+        Be sure you fully understand the requirements before proceeding.
+    """.trimIndent()
+
 inline fun <reified Input> AIAgentSubgraphBuilderBase<*, *>.clarificableNode(clarificationUseCase: IClarificationUseCase) =
     node<Input, String>(name = "ClarificableNode") {
         llm.writeSession {
             updatePrompt {
-                system(
-                    """
-                    Begin by thoroughly analyzing the task description provided by the user.
-                        If the task description is unclear, ask the user for clarification before planning (if so, 
-                        please start your response with $CLARIFICATION_PREFIX and then continue with your questions).
-                        Be sure you fully understand the requirements before proceeding.
-                    """.trimIndent(),
-                )
+                system(CLARIFICATION_SYSTEM_PROMPT)
             }
 
             var response: String

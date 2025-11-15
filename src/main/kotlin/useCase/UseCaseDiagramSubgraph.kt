@@ -1,4 +1,4 @@
-package com.pawlowski
+package com.pawlowski.useCase
 
 import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
 import ai.koog.agents.core.dsl.builder.AIAgentGraphStrategyBuilder
@@ -11,7 +11,7 @@ import com.pawlowski.plantUml.diagramErrorCorrectorNode
 import com.pawlowski.plantUml.generateUmlImage
 
 data class UseCaseDiagramInput(
-    val plainTextUseCaseDesciption: String,
+    val plainTextUseCaseDescription: String,
 )
 
 data class UseCaseDiagramOutput(
@@ -67,7 +67,7 @@ private fun AIAgentSubgraphBuilderBase<*, *>.modelerPromptNode() =
     }
 
 private fun AIAgentSubgraphBuilderBase<*, *>.generateDiagramNode() =
-    node<String, Result<String>>("manager_plan") { input ->
+    node<String, Result<String>>("use_case_diagram_generator") { input ->
         println("Generating diagram...")
         runCatching {
             generateUmlImage(
